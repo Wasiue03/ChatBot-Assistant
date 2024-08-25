@@ -1,29 +1,32 @@
 import streamlit as st
 import requests
 
-# Backend URL
-BACKEND_URL = "http://127.0.0.1:8000"
+# Define the FastAPI server URL
+api_url = "http://127.0.0.1:8000/chatbot"
 
+# Streamlit UI
 st.title("Chatbot Interface")
+st.write("Enter your query below:")
 
-# Input field
-user_input = st.text_input("Enter Command:")
+user_input = st.text_input("Your query")
 
-# Button to send request
 if st.button("Send"):
-    if user_input:
+    # Prepare the payload based on the user input
+    if user_input.startswith("open youtube"):
         payload = {"input": user_input}
-        response = requests.post(f"{BACKEND_URL}/chatbot", json=payload)
-        response_data = response.json()
-        st.write(response_data.get('message', response_data.get('summary', "No response")))
+    elif user_input.startswith("search for"):
+        payload = {"input": user_input}
+    elif user_input.startswith("summarize"):
+        article = st.text_area("Article to summarize", "Default long article text here")
+        payload = {"input": "summarize", "article": article}
+    else:
+        payload = {"input": user_input}
 
-# Button to check server status
-if st.button("Check Server"):
+    # Send request to FastAPI server
     try:
-        response = requests.get(f"{BACKEND_URL}/ping")
-        if response.status_code == 200:
-            st.success("Server is running")
-        else:
-            st.error("Server not reachable")
-    except requests.exceptions.ConnectionError:
-        st.error("Server not reachable")
+        response = requests.post(api_url, json=payload)
+        response.raise_for_status()
+        result = response.json()
+        st.write("Response:", result)
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error: {e}")
